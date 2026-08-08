@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>BENGKEL NALAR — Kelas X</title>
+<meta name="description" content="Ringkasan belajar Kelas X: Matematika, Fisika, Kimia, Bahasa Inggris — dibedah seperti catatan riset seorang penemu.">
+<meta name="theme-color" content="#0F2440">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="grid-overlay" aria-hidden="true"></div>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-mark">✎⌀</span>
+      <div class="brand-text">
+        <span class="brand-title">BENGKEL NALAR</span>
+        <span class="brand-sub">Buku Catatan Investigasi — Kelas X</span>
+      </div>
+    </div>
+    <button id="btn-progress" class="progress-pill" aria-label="Lihat progres">
+      <span id="progress-count">0</span>/<span id="progress-total">0</span> kasus dibuka
+    </button>
+  </div>
+  <nav class="tabbar" id="tabbar" role="tablist" aria-label="Mata pelajaran"></nav>
+</header>
+
+<main id="app" class="app"></main>
+
+<div id="drawer-overlay" class="drawer-overlay"></div>
+<aside id="drawer" class="drawer" aria-hidden="true">
+  <div class="drawer-head">
+    <span>DAFTAR BAB</span>
+    <button id="drawer-close" aria-label="Tutup">✕</button>
+  </div>
+  <div id="drawer-list" class="drawer-list"></div>
+</aside>
+
+<button id="btn-toc" class="fab" aria-label="Buka daftar bab">☰ BAB</button>
+
+<script src="content-matematika.js"></script>
+<script src="content-fisika.js"></script>
+<script src="content-kimia.js"></script>
+<script src="content-biologi.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+{
+  "name": "Bengkel Nalar — Kelas X",
+  "short_name": "Bengkel Nalar",
+  "description": "Ringkasan belajar Kelas X (Matematika, Fisika, Kimia, Biologi) dengan gaya buku catatan investigasi seorang penemu.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0B2036",
+  "theme_color": "#0F2440",
+  "lang": "id",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
