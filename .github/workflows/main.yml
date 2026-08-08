@@ -87,20 +87,28 @@ jobs:
 
       # Every CI run starts from a clean checkout, so there's never a previously
       # generated Android project sitting around. Bubblewrap notices this and
-      # asks "regenerate your project? (Y/n)" — but that prompt needs a real
-      # interactive terminal to answer, which a plain `echo "y" | ...` pipe does
-      # NOT provide (it gets ignored and the process is killed, exit code 130).
-      # `expect` fakes a real terminal and types "y" for us when the question appears.
-      - name: Install expect (to auto-answer Bubblewrap's prompt)
+      # asks two kinds of questions that need a real interactive terminal to
+      # answer (a plain `echo | ...` pipe does NOT work for these):
+      #   1) "regenerate your project? (Y/n)"
+      #   2) "enter passwords for the keystore ... and alias ..." (asked twice:
+      #      once for the keystore password, once for the key password)
+      # `expect` fakes a real terminal and types the right answer each time.
+      - name: Install expect (to auto-answer Bubblewrap's prompts)
         run: sudo apt-get update -y && sudo apt-get install -y expect
 
       - name: Build APK from committed twa-manifest.json
         run: |
           expect -c '
             set timeout -1
+            set pwcount 0
             spawn bubblewrap build --skipPwaValidation --password=$env(KS_PASS) --keyPassword=$env(KEY_PASS)
             expect {
               -re {\(Y/n\)} { send "y\r"; exp_continue }
+              -re {[Pp]assword} {
+                incr pwcount
+                if {$pwcount == 1} { send "$env(KS_PASS)\r" } else { send "$env(KEY_PASS)\r" }
+                exp_continue
+              }
               eof
             }
             lassign [wait] pid spawnid os_error_flag value
