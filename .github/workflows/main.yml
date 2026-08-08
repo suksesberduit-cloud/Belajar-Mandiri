@@ -1,0 +1,109 @@
+name: Deploy PWA & Build APK
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  # ---------- 1) Deploy the PWA itself to GitHub Pages ----------
+  deploy-pages:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+  # ---------- 2) Build the Android APK from the deployed PWA ----------
+  build-apk:
+    needs: deploy-pages
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Bubblewrap CLI
+        run: npm install -g @bubblewrap/cli
+
+      # Bubblewrap normally asks interactively where to install its own JDK/Android
+      # SDK copies. Pointing it at the ones setup-java/setup-android already
+      # installed skips that prompt entirely (needed for a non-interactive CI run).
+      - name: Point Bubblewrap at the JDK & Android SDK above
+        run: |
+          mkdir -p ~/.bubblewrap
+          cat > ~/.bubblewrap/config.json << CFG
+          {
+            "jdkPath": "${JAVA_HOME}",
+            "androidSdkPath": "${ANDROID_HOME}"
+          }
+          CFG
+
+      # A signing keystore is what lets a NEW apk build be recognized by Android
+      # as "the same app" as the previous one (so it can update in place instead
+      # of needing a full uninstall/reinstall). Two paths:
+      #  - KEYSTORE_BASE64 secret set  -> reuse the same permanent keystore every build (recommended)
+      #  - not set                     -> generate a fresh one just for this run (fine to try things out,
+      #                                   but every build after this will be signed differently)
+      - name: Prepare signing keystore
+        run: |
+          if [ -n "${{ secrets.KEYSTORE_BASE64 }}" ]; then
+            echo "Using the permanent keystore from the KEYSTORE_BASE64 repo secret."
+            echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android.keystore
+            echo "KS_PASS=${{ secrets.KEYSTORE_PASSWORD }}" >> "$GITHUB_ENV"
+            echo "KEY_PASS=${{ secrets.KEY_PASSWORD }}" >> "$GITHUB_ENV"
+          else
+            echo "::warning::No KEYSTORE_BASE64 secret found — generating a ONE-OFF keystore for this build only. Future builds will be signed differently unless you save this one as a secret (see the uploaded 'signing-keystore-SAVE-ME' artifact and README.md)."
+            keytool -genkeypair -v \
+              -keystore android.keystore \
+              -alias bengkelnalar \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass bengkelnalar123 -keypass bengkelnalar123 \
+              -dname "CN=Bengkel Nalar, OU=Bengkel Nalar, O=Bengkel Nalar, L=, S=, C=ID"
+            echo "KS_PASS=bengkelnalar123" >> "$GITHUB_ENV"
+            echo "KEY_PASS=bengkelnalar123" >> "$GITHUB_ENV"
+          fi
+
+      - name: Build APK from committed twa-manifest.json
+        run: |
+          bubblewrap build --skipPwaValidation \
+            --password="$KS_PASS" --keyPassword="$KEY_PASS"
+
+      - name: Rename output APK
+        run: cp app-release-signed.apk BengkelNalar.apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: BengkelNalar-apk
+          path: BengkelNalar.apk
+
+      # Only uploaded so you can grab it once and save it as the KEYSTORE_BASE64
+      # secret — after that, this artifact will just re-contain the same file
+      # every run and you can ignore it.
+      - name: Upload keystore (save this once as a secret!)
+        uses: actions/upload-artifact@v4
+        with:
+          name: signing-keystore-SAVE-ME
+          path: android.keystore
